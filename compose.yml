@@ -9,6 +9,21 @@ services:
       - CATALOG_DB_DSN="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/catalog_db?sslmode=disable"
     ports:
       - 8082:8082
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - backend-net
+  
+  auth:
+    image: auth-service:v1
+    environment:
+      - AUTH_DB_URL="jdbc:postgresql://postgres-db:5432/auth_db"
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      postgres_db:
+        condition: service_healthy
     networks:
       - backend-net
   
@@ -18,10 +33,23 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - DB_USER=${DB_USER}
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Run the bootstrap script upon initialization of postgres container
       - ./database/bootstrap.sql:/docker-entrypoint-initdb.d/01-bootstrap.sql:ro
+    healthcheck:
+      test: 
+        ["CMD", 
+          "pg_isready",
+          "-h", "localhost",
+          "-U", "${DB_USER}",
+          "-d", "${POSTGRES_DB}",
+          "-p", "5432"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - backend-net
 
