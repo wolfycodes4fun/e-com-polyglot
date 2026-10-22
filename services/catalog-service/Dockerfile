@@ -3,7 +3,7 @@ FROM golang:1.27.3-alpine3.24 AS build
 WORKDIR /go/src/
 
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod tidy
 
 COPY main.go .
 RUN go build -o /go/src/catalog-service .

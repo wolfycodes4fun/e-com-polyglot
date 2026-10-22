@@ -3,30 +3,7 @@ networks:
   backend-net:
     driver: bridge
 services:
-  catalog:
-    image: catalog-service:v1
-    environment:
-      - CATALOG_DB_DSN="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/catalog_db?sslmode=disable"
-    ports:
-      - 8082:8082
-    depends_on:
-      postgres-db:
-        condition: service_healthy
-    networks:
-      - backend-net
-  
-  auth:
-    image: auth-service:v1
-    environment:
-      - AUTH_DB_URL="jdbc:postgresql://postgres-db:5432/auth_db"
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-    networks:
-      - backend-net
-  
+
   postgres-db:
     image: postgres:17-alpine
     environment:
@@ -53,5 +30,66 @@ services:
     networks:
       - backend-net
 
+  auth:
+    image: auth-service:v1
+    environment:
+      - AUTH_DB_URL="jdbc:postgresql://postgres-db:5432/auth_db"
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    ports:
+      - 8081:8081
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    networks:
+      - backend-net
+
+  catalog:
+    image: catalog-service:v1
+    environment:
+      - CATALOG_DB_DSN="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/catalog_db?sslmode=disable"
+    ports:
+      - 8082:8082
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - backend-net
+  
+  inventory:
+    image: inventory-service:v1
+    environment:
+      - INVENTORY_DB_URL="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/inventory_db"
+    ports:
+      - 8083:8083
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - backend-net
+
+  notifications:
+    image: notification-service:v1
+    environment:
+      - NOTIFICATION_DB_URL="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/notification_db"
+    ports:
+      - 8086:8086
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - backend-net
+  
+  orders:
+    image: order-service:v1
+    environment:
+      - ORDER_DB_DSN="dbname=order_db user=${DB_USER} password=${DB_PASSWORD} host=postgres-db port=5432"
+    ports:
+      - 8084:8084
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - backend-net
 volumes:
   pgdata:
