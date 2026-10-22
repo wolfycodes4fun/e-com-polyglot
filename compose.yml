@@ -6,7 +6,7 @@ services:
   catalog:
     image: catalog-service:v1
     environment:
-      CATALOG_DB_DSN: "postgres://microapp:microapp123@postgres-db:5432/catalog_db?sslmode=disable"
+      - CATALOG_DB_DSN="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/catalog_db?sslmode=disable"
     ports:
       - 8082:8082
     networks:
@@ -14,5 +14,16 @@ services:
   
   postgres-db:
     image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Run the bootstrap script upon initialization of postgres container
+      - ./database/bootstrap.sql:/docker-entrypoint-initdb.d/01-bootstrap.sql:ro
     networks:
       - backend-net
+
+volumes:
+  pgdata:
