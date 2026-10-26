@@ -25,7 +25,7 @@ RUN apt-get update \
 RUN useradd -u 10005 rubyuser
 
 COPY --from=builder --chown=rubyuser:rubyuser /usr/local/bundle /usr/local/bundle
-COPY --from=builder --chown=rubyuser:rubyuser /usr/src/notification-service/app.rb .
+COPY --from=builder --chown=rubyuser:rubyuser /usr/src/notification-service/ .
 
 USER rubyuser
 
