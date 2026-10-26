@@ -19,11 +19,15 @@ FROM ruby:3.4-slim-bookworm
 WORKDIR /usr/src/notification-service/
 
 RUN apt-get update \
-    && apt-get install -y libpq5 \
+    && apt-get install -y libpq5 curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/local/bundle /usr/local/bundle
-COPY --from=builder /usr/src/notification-service/app.rb .
+RUN useradd -u 10005 rubyuser
+
+COPY --from=builder --chown=rubyuser:rubyuser /usr/local/bundle /usr/local/bundle
+COPY --from=builder --chown=rubyuser:rubyuser /usr/src/notification-service/app.rb .
+
+USER rubyuser
 
 EXPOSE 8086
 ENTRYPOINT ["bundle", "exec", "ruby", "app.rb"]

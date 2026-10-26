@@ -1,14 +1,20 @@
 FROM php:8.6-rc-alpine
 
 WORKDIR /usr/src/analytics-service/
-COPY . .
 
 # Install and enable required PHP extensions
-RUN apk update && apk add --no-cache \
-    postgresql-dev \
-    curl-dev
+RUN apk add --no-cache libpq curl \
+    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS postgresql-dev curl-dev \
+    && docker-php-ext-install -j$(nproc) pdo_pgsql curl \
+    && apk del .build-deps
 
-RUN docker-php-ext-install pdo_pgsql curl
+# Add non-priveleged user
+RUN addgroup -S phpuser \
+    && adduser -S -D -G phpuser -u 10005 phpuser
+
+COPY --chown=phpuser:phpuser ./router.php ./
+
+USER phpuser
 
 EXPOSE 8087
 CMD ["php", "-S", "0.0.0.0:8087", "router.php"]

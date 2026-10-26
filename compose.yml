@@ -7,10 +7,10 @@ services:
   postgres-db:
     image: postgres:17-alpine
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - DB_USER=${DB_USER}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      DB_USER: ${DB_USER}
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Run the bootstrap script upon initialization of postgres container
@@ -31,23 +31,28 @@ services:
       - backend-net
 
   auth:
-    image: auth-service:v1
+    image: auth-service:v2
     environment:
-      - AUTH_DB_URL="jdbc:postgresql://postgres-db:5432/auth_db"
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      AUTH_DB_URL: "jdbc:postgresql://postgres-db:5432/auth_db"
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - 8081:8081
     depends_on:
-      postgres_db:
+      postgres-db:
         condition: service_healthy
     networks:
       - backend-net
 
   catalog:
-    image: catalog-service:v1
+    image: catalog-service:v2
     environment:
-      - CATALOG_DB_DSN="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/catalog_db?sslmode=disable"
+      CATALOG_DB_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/catalog_db?sslmode=disable"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8082/health || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 10 
     ports:
       - 8082:8082
     depends_on:
@@ -57,9 +62,14 @@ services:
       - backend-net
   
   inventory:
-    image: inventory-service:v1
+    image: inventory-service:v2
     environment:
-      - INVENTORY_DB_URL="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/inventory_db"
+      INVENTORY_DB_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/inventory_db"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/health || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
     ports:
       - 8083:8083
     depends_on:
@@ -69,9 +79,14 @@ services:
       - backend-net
 
   notifications:
-    image: notification-service:v1
+    image: notification-service:v3
     environment:
-      - NOTIFICATION_DB_URL="postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/notification_db"
+      NOTIFICATION_DB_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/notification_db"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8086/health || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
     ports:
       - 8086:8086
     depends_on:
@@ -79,15 +94,66 @@ services:
         condition: service_healthy
     networks:
       - backend-net
-  
+
   orders:
-    image: order-service:v1
+    image: order-service:v3
     environment:
-      - ORDER_DB_DSN="dbname=order_db user=${DB_USER} password=${DB_PASSWORD} host=postgres-db port=5432"
+      ORDER_DB_DSN: "dbname=order_db user=${DB_USER} password=${DB_PASSWORD} host=postgres-db port=5432"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8084/health || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
     ports:
       - 8084:8084
     depends_on:
       postgres-db:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      inventory:
+        condition: service_healthy
+      notifications:
+        condition: service_healthy
+    networks:
+      - backend-net
+  
+  payments:
+    image: payment-service:v2
+    environment:
+      PAYMENT_DB_URL: "Host=postgres-db;Port=5432;Database=payment_db;Username=${DB_USER};Password=${DB_PASSWORD}"
+    healthcheck:
+      test: ["CMD-SHELL", ""]
+    ports:
+      - 8085:8085
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      inventory:
+        condition: service_healthy
+      notifications:
+        condition: service_healthy
+      orders:
+        condition: service_healthy
+    networks:
+      - backend-net
+  
+  anaytics:
+    image: analytics-service:v2
+    environment:
+      ANALYTICS_DB_DSN: "pgsql:host=postgres-db;port=5432;dbname=analytics_db"
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - 8087:8087
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      inventory:
+        condition: service_healthy
+      orders:
         condition: service_healthy
     networks:
       - backend-net
