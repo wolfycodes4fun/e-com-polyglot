@@ -2,6 +2,9 @@
 networks:
   backend-net:
     driver: bridge
+  
+  frontend-net:
+    driver: bridge
 services:
 
   postgres-db:
@@ -122,8 +125,6 @@ services:
     image: payment-service:v2
     environment:
       PAYMENT_DB_URL: "Host=postgres-db;Port=5432;Database=payment_db;Username=${DB_USER};Password=${DB_PASSWORD}"
-    healthcheck:
-      test: ["CMD-SHELL", ""]
     ports:
       - 8085:8085
     depends_on:
@@ -138,7 +139,7 @@ services:
     networks:
       - backend-net
   
-  anaytics:
+  analytics:
     image: analytics-service:v2
     environment:
       ANALYTICS_DB_DSN: "pgsql:host=postgres-db;port=5432;dbname=analytics_db"
@@ -157,5 +158,28 @@ services:
         condition: service_healthy
     networks:
       - backend-net
+  
+  ecomsite:
+    image: ecomsite:v1
+    ports:
+      - 8090:80
+    depends_on:
+      auth:
+        condition: service_started
+      catalog:
+        condition: service_started
+      inventory:
+        condition: service_started
+      notifications:
+        condition: service_started
+      orders:
+        condition: service_started
+      payments:
+        condition: service_started
+      analytics:
+        condition: service_started
+    networks:
+      - backend-net
+      - frontend-net
 volumes:
   pgdata:
