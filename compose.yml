@@ -138,7 +138,7 @@ services:
     networks:
       - backend-net
   
-  anaytics:
+  analytics:
     image: analytics-service:v2
     environment:
       ANALYTICS_DB_DSN: "pgsql:host=postgres-db;port=5432;dbname=analytics_db"
