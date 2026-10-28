@@ -21,4 +21,4 @@ COPY --from=builder --chown=app:app  /app/publish .
 USER app
 
 EXPOSE 8085
-CMD ["./payment-service"]
+ENTRYPOINT ["./payment-service"]
