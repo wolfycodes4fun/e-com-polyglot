@@ -2,6 +2,9 @@
 networks:
   backend-net:
     driver: bridge
+  
+  frontend-net:
+    driver: bridge
 services:
 
   postgres-db:
@@ -157,5 +160,28 @@ services:
         condition: service_healthy
     networks:
       - backend-net
+  
+  ecomsite:
+    image: ecomsite:v1
+    ports:
+      - 8090:80
+    depends_on:
+      auth:
+        condition: service_started
+      catalog:
+        condition: service_started
+      inventory:
+        condition: service_started
+      notifications:
+        condition: service_started
+      orders:
+        condition: service_started
+      payments:
+        condition: service_started
+      analytics:
+        condition: service_started
+    networks:
+      - backend-net
+      - frontend-net
 volumes:
   pgdata:
