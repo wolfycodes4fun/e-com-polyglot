@@ -13,6 +13,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      DB_USER: ${DB_USER}
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Run the bootstrap script upon initialization of postgres container
