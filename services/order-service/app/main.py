@@ -1,13 +1,15 @@
 import os
+import time
 from decimal import Decimal
 from typing import Literal
 
 import httpx
 import psycopg2
 from psycopg2.extras import RealDictCursor, Json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 DB_DSN = os.getenv(
     "ORDER_DB_DSN",
@@ -24,6 +26,45 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+HTTP_REQUESTS = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "route", "status"],
+)
+
+HTTP_REQUEST_DURATION = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "route"],
+)
+
+@app.middleware("http")
+async def record_http_metrics(request: Request, call_next):
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
+    start_time = time.perf_counter()
+    status = 500
+
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        duration = time.per_counter() - start_time
+        route = request.scope.get("route")
+        path = route.path if route else "unmatched"
+
+        HTTP_REQUESTS.labels(method=request.method, route=path, status=str(status)).inc()
+        HTTP_REQUEST_DURATION.labels(method=request.method, route=path).observe(duration)
+
+@app.get("/metrics", include_in_schema=False)
+def metrics():
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
 
 def conn():
     return psycopg2.connect(DB_DSN, cursor_factory=RealDictCursor)
