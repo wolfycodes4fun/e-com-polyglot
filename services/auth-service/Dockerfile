@@ -21,5 +21,7 @@ COPY --from=builder --chown=javauser:javauser \
 
 USER javauser
 
+# Port for Prometheus to scrape metrics
+EXPOSE 9091
 EXPOSE 8081
 ENTRYPOINT ["java", "-jar" , "auth-service.jar"]
