@@ -56,7 +56,7 @@ async def record_http_metrics(request: Request, call_next):
         status = response.status_code
         return response
     finally:
-        duration = time.per_counter() - start_time
+        duration = time.perf_counter() - start_time
         route = request.scope.get("route")
         path = route.path if route else "unmatched"
 
