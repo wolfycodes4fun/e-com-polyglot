@@ -14,7 +14,10 @@ services:
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
-      - auth
+      auth:
+        condition: service_healthy
+      orders:
+        condition: service_healthy
     networks:
       - backend-net
 
@@ -52,6 +55,8 @@ services:
       AUTH_DB_URL: "jdbc:postgresql://postgres-db:5432/auth_db"
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8081/health || exit 1"]
     ports:
       - 8081:8081
     depends_on:
@@ -67,7 +72,7 @@ services:
     environment:
       CATALOG_DB_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@postgres-db:5432/catalog_db?sslmode=disable"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8082/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8082/health || exit 1"]
       interval: 5s
       timeout: 10s
       retries: 10 
