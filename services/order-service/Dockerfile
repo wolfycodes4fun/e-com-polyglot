@@ -16,5 +16,7 @@ RUN useradd --create-home --uid 10001 appuser \
     && chown -R appuser:appuser /app
 USER appuser
 
+# For Prometheus to scrape metrics
+EXPOSE 9091
 EXPOSE 8084
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8084"]

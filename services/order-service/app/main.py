@@ -9,7 +9,7 @@ from psycopg2.extras import RealDictCursor, Json
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, start_http_server, generate_latest, CONTENT_TYPE_LATEST
 
 DB_DSN = os.getenv(
     "ORDER_DB_DSN",
@@ -26,6 +26,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+def start_metrics_server():
+    start_http_server(port=9091, addr="0.0.0.0")
 
 HTTP_REQUESTS = Counter(
     "http_requests_total",
