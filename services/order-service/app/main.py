@@ -116,6 +116,10 @@ def health():
             cur.execute("SELECT 1")
     return {"service": "order-service", "status": "UP", "language": "Python"}
 
+@app.post("/orders/echo")
+def echo(payload: dict):
+    return {"service": "order-service", "dummy-order": payload.get("content")}
+
 @app.get("/orders")
 def list_orders():
     with conn() as db:

@@ -29,6 +29,16 @@ public class AuthController {
     return Map.of("service","auth-service","status","UP","language","Java");
   }
 
+  @GetMapping("/failure")
+  public void failure() {
+    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "intentional test failure");
+  }
+
+  @PostMapping("/auth/echo")
+  public Map<String,String> echo(@RequestBody Map<String, String> payload) {
+    return Map.of("service", "auth-service", "Suggested username", payload.get("username"));
+  }
+
   @PostMapping("/auth/register")
   @ResponseStatus(HttpStatus.CREATED)
   public Map<String,Object> register(@RequestBody RegisterRequest req) {
