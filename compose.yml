@@ -190,6 +190,8 @@ services:
       - backend-net
   
   ecomsite:
+    build:
+      context: ./frontend
     image: ecomsite:v1
     ports:
       - 8090:80
